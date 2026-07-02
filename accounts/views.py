@@ -3,6 +3,12 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .forms import UserRegisterForm
+from doctors.models import Doctor
+from patients.models import Patient
+from departments.models import Department
+from appointments.models import Appointment
+from django.db.models import Count, Q
+from datetime import date
 from django.views.decorators.csrf import csrf_exempt
 
 def get_dashboard_url(user):
@@ -65,7 +71,42 @@ def logout_view(request):
 # Placeholder Dashboards
 @login_required
 def admin_dashboard(request):
-    return render(request, 'dashboards/admin_dashboard.html', {'role': 'Admin'})
+    # Get counts for statistics
+    total_doctors = Doctor.objects.count()
+    total_patients = Patient.objects.count()
+    total_departments = Department.objects.count()
+    total_appointments = Appointment.objects.count()
+    
+    # Today's appointments
+    today = date.today()
+    today_appointments = Appointment.objects.filter(appointment_date=today)
+    today_scheduled = today_appointments.filter(status='Scheduled').count()
+    today_completed = today_appointments.filter(status='Completed').count()
+    today_cancelled = today_appointments.filter(status='Cancelled').count()
+    
+    # Recent appointments (last 10)
+    recent_appointments = Appointment.objects.all().select_related('patient', 'doctor').order_by('-appointment_date', '-appointment_time')[:10]
+    
+    # Department-wise doctor count (for a small chart/donut later)
+    departments_with_counts = Department.objects.annotate(
+        doctor_count=Count('doctors')
+    ).values('department_name', 'doctor_count')
+    
+    context = {
+        'role': 'Admin',
+        'total_doctors': total_doctors,
+        'total_patients': total_patients,
+        'total_departments': total_departments,
+        'total_appointments': total_appointments,
+        'today_scheduled': today_scheduled,
+        'today_completed': today_completed,
+        'today_cancelled': today_cancelled,
+        'today_appointments_total': today_appointments.count(),
+        'recent_appointments': recent_appointments,
+        'departments_with_counts': departments_with_counts,
+    }
+    return render(request, 'dashboards/admin_dashboard.html', context)
+
 
 @login_required
 def doctor_dashboard(request):

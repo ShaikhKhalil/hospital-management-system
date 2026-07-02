@@ -2,9 +2,27 @@
 {% block title %}Receptionist Dashboard{% endblock %}
 {% block content %}
 <div class="text-center">
-    <h1 class="display-4">Receptionist Dashboard</h1>
-    <p class="lead">Welcome, {{ request.user.username }}! Your role is <strong>{{ role }}</strong>.</p>
-    <p>This is a placeholder. We'll build the real receptionist dashboard in Step 9.</p>
-    <a href="{% url 'accounts:logout' %}" class="btn btn-danger">Logout</a>
+    <h1 class="display-4"><i class="fas fa-user-tie me-2"></i>Receptionist Dashboard</h1>
+    <p class="lead">Welcome, {{ request.user.username }}!</p>
+    <p>Your role is: <strong>{{ role }}</strong></p>
+    <div class="row mt-4 justify-content-center">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Register Patient</h5>
+                    <a href="{% url 'patients:add' %}" class="btn btn-primary">Add Patient</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5>Book Appointment</h5>
+                    <a href="{% url 'appointments:add' %}" class="btn btn-primary">Book Now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <a href="{% url 'accounts:logout' %}" class="btn btn-danger mt-3">Logout</a>
 </div>
 {% endblock %}
