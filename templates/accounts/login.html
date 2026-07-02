@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - Hospital Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white text-center">
+                <h4><i class="fas fa-sign-in-alt me-2"></i>Login</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Enter username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Login</button>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                Don't have an account? <a href="{% url 'accounts:register' %}">Register here</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

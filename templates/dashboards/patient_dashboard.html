@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Patient Dashboard{% endblock %}
+{% block content %}
+<div class="text-center">
+    <h1 class="display-4">Patient Dashboard</h1>
+    <p class="lead">Welcome, {{ request.user.username }}! Your role is <strong>{{ role }}</strong>.</p>
+    <p>This is a placeholder. We'll build the real patient dashboard in Step 9.</p>
+    <a href="{% url 'accounts:logout' %}" class="btn btn-danger">Logout</a>
+</div>
+{% endblock %}

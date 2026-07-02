@@ -123,3 +123,7 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
+
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'accounts:admin_dashboard'   # fallback
+LOGOUT_REDIRECT_URL = 'accounts:login'
