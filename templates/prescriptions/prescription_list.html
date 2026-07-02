@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Prescriptions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-prescription me-2"></i>Prescriptions</h2>
+    <a href="{% url 'prescriptions:add' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Add Prescription
+    </a>
+</div>
+
+<!-- Search -->
+<form method="get" class="mb-4">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Search by patient, doctor, or diagnosis..." value="{{ query }}">
+        <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
+        {% if query %}<a href="{% url 'prescriptions:list' %}" class="btn btn-outline-danger">Clear</a>{% endif %}
+    </div>
+</form>
+
+<!-- Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Appointment</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Diagnosis</th>
+                <th>Medicines</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prescription in page_obj %}
+            <tr>
+                <td>#{{ prescription.prescription_id }}</td>
+                <td>#{{ prescription.appointment.appointment_id }}</td>
+                <td>{{ prescription.appointment.patient.first_name }} {{ prescription.appointment.patient.last_name }}</td>
+                <td>Dr. {{ prescription.appointment.doctor.first_name }} {{ prescription.appointment.doctor.last_name }}</td>
+                <td>{{ prescription.diagnosis|truncatechars:30 }}</td>
+                <td>{{ prescription.medicines|truncatechars:30 }}</td>
+                <td>{{ prescription.created_at|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'prescriptions:edit' prescription.pk %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'prescriptions:delete' prescription.pk %}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center">No prescriptions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}">&laquo; First</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Last &raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

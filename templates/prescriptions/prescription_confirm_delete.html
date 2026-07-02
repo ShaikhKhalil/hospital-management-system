@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Delete Prescription{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirm Delete</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Are you sure you want to delete Prescription #<strong>{{ prescription.prescription_id }}</strong>?</p>
+                <p><strong>Patient:</strong> {{ prescription.appointment.patient.first_name }} {{ prescription.appointment.patient.last_name }}</p>
+                <p><strong>Doctor:</strong> Dr. {{ prescription.appointment.doctor.first_name }} {{ prescription.appointment.doctor.last_name }}</p>
+                <p><strong>Diagnosis:</strong> {{ prescription.diagnosis }}</p>
+                <p class="text-muted">This action cannot be undone.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Yes, Delete</button>
+                    <a href="{% url 'prescriptions:list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

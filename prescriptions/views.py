@@ -1,3 +1,93 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from .models import Prescription
+from .forms import PrescriptionForm
 
-# Create your views here.
+def is_admin(user):
+    return hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+
+# 1. List Prescriptions
+@login_required
+def prescription_list(request):
+    if not is_admin(request.user):
+        messages.error(request, 'You do not have permission to view this page.')
+        return redirect('accounts:patient_dashboard')
+
+    query = request.GET.get('q', '')
+    prescriptions = Prescription.objects.all().select_related('appointment__patient', 'appointment__doctor')
+
+    if query:
+        prescriptions = prescriptions.filter(
+            Q(appointment__patient__first_name__icontains=query) |
+            Q(appointment__patient__last_name__icontains=query) |
+            Q(appointment__doctor__first_name__icontains=query) |
+            Q(appointment__doctor__last_name__icontains=query) |
+            Q(diagnosis__icontains=query)
+        )
+
+    paginator = Paginator(prescriptions, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {'page_obj': page_obj, 'query': query}
+    return render(request, 'prescriptions/prescription_list.html', context)
+
+# 2. Add Prescription
+@login_required
+def prescription_add(request):
+    if not is_admin(request.user):
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('accounts:patient_dashboard')
+
+    if request.method == 'POST':
+        form = PrescriptionForm(request.POST)
+        if form.is_valid():
+            prescription = form.save()
+            messages.success(request, f'Prescription created for Appointment #{prescription.appointment.appointment_id}')
+            return redirect('prescriptions:list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PrescriptionForm()
+
+    return render(request, 'prescriptions/prescription_form.html', {'form': form, 'title': 'Add Prescription'})
+
+# 3. Edit Prescription
+@login_required
+def prescription_edit(request, pk):
+    if not is_admin(request.user):
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('accounts:patient_dashboard')
+
+    prescription = get_object_or_404(Prescription, pk=pk)
+    if request.method == 'POST':
+        form = PrescriptionForm(request.POST, instance=prescription)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Prescription #{prescription.prescription_id} updated successfully!')
+            return redirect('prescriptions:list')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PrescriptionForm(instance=prescription)
+
+    return render(request, 'prescriptions/prescription_form.html', {'form': form, 'title': 'Edit Prescription', 'prescription': prescription})
+
+# 4. Delete Prescription
+@login_required
+def prescription_delete(request, pk):
+    if not is_admin(request.user):
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('accounts:patient_dashboard')
+
+    prescription = get_object_or_404(Prescription, pk=pk)
+    if request.method == 'POST':
+        prescription_id = prescription.prescription_id
+        prescription.delete()
+        messages.success(request, f'Prescription #{prescription_id} deleted successfully!')
+        return redirect('prescriptions:list')
+
+    return render(request, 'prescriptions/prescription_confirm_delete.html', {'prescription': prescription})
