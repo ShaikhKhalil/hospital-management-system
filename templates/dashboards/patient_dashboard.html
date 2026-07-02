@@ -1,30 +1,217 @@
 {% extends 'base.html' %}
+{% load static %}
+
 {% block title %}Patient Dashboard{% endblock %}
+
 {% block content %}
-<div class="text-center">
-    <h1 class="display-4"><i class="fas fa-user me-2"></i>Patient Dashboard</h1>
-    <p class="lead">Welcome, {{ request.user.username }}!</p>
-    <p>Your role is: <strong>{{ role }}</strong></p>
-    <div class="row mt-4 justify-content-center">
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5>My Appointments</h5>
-                    <p class="display-6">0</p>
-                    <a href="#" class="btn btn-primary btn-sm">View</a>
-                </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user me-2"></i>Patient Dashboard</h2>
+    <div>
+        <span class="text-muted">Welcome, <strong>{{ request.user.username }}</strong>!</span>
+        <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger ms-2">
+            <i class="fas fa-sign-out-alt me-1"></i> Logout
+        </a>
+    </div>
+</div>
+
+{% if not has_patient_profile %}
+<div class="alert alert-warning">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Your account is not linked to a patient profile. Please contact the hospital admin.
+</div>
+{% else %}
+
+<!-- ====== Profile Card ====== -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                {% if patient.profile_image %}
+                    <img src="{{ patient.profile_image.url }}" alt="{{ patient.first_name }}" 
+                         class="rounded-circle img-thumbnail" width="120" height="120">
+                {% else %}
+                    <img src="{% static 'images/default-avatar.png' %}" alt="Default" 
+                         class="rounded-circle img-thumbnail" width="120" height="120">
+                {% endif %}
+                <h4 class="mt-3">{{ patient.first_name }} {{ patient.last_name }}</h4>
+                <p class="text-muted">
+                    <i class="fas fa-venus-mars me-1"></i>{{ patient.get_gender_display }} 
+                    | <i class="fas fa-calendar-alt me-1"></i>{{ patient.age }} years
+                    {% if patient.blood_group %}
+                    | <i class="fas fa-tint me-1"></i>{{ patient.blood_group }}
+                    {% endif %}
+                </p>
+                <p><i class="fas fa-envelope me-1"></i>{{ patient.email }}</p>
+                <p><i class="fas fa-phone me-1"></i>{{ patient.phone }}</p>
+                {% if patient.address %}
+                    <p><i class="fas fa-map-marker-alt me-1"></i>{{ patient.address }}</p>
+                {% endif %}
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5>Prescriptions</h5>
-                    <p class="display-6">0</p>
-                    <a href="#" class="btn btn-primary btn-sm">View</a>
+    </div>
+
+    <!-- ====== Statistics Cards ====== -->
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-sm-6 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h6 class="card-title text-white-50">Upcoming Appointments</h6>
+                        <h2 class="display-6">{{ upcoming_appointments|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h6 class="card-title text-white-50">Completed Appointments</h6>
+                        <h2 class="display-6">{{ completed_count }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 mb-3">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body">
+                        <h6 class="card-title text-dark-50">Prescriptions</h6>
+                        <h2 class="display-6">{{ prescriptions|length }}</h2>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <a href="{% url 'accounts:logout' %}" class="btn btn-danger mt-3">Logout</a>
 </div>
+
+<!-- ====== Upcoming Appointments ====== -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-calendar-check me-2"></i>Upcoming Appointments</h5>
+                <a href="{% url 'appointments:add' %}" class="btn btn-sm btn-primary">Book New</a>
+            </div>
+            <div class="card-body">
+                {% if upcoming_appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Doctor</th>
+                                    <th>Specialization</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in upcoming_appointments %}
+                                <tr>
+                                    <td>{{ appt.appointment_id }}</td>
+                                    <td>Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }}</td>
+                                    <td>{{ appt.doctor.specialization }}</td>
+                                    <td>{{ appt.appointment_date|date:"d M Y" }}</td>
+                                    <td>{{ appt.appointment_time|time:"H:i" }}</td>
+                                    <td><span class="badge bg-primary">{{ appt.status }}</span></td>
+                                    <td>{{ appt.remarks|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No upcoming appointments.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== Past Appointments ====== -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history me-2"></i>Past Appointments</h5>
+            </div>
+            <div class="card-body">
+                {% if past_appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Doctor</th>
+                                    <th>Specialization</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in past_appointments %}
+                                <tr>
+                                    <td>{{ appt.appointment_id }}</td>
+                                    <td>Dr. {{ appt.doctor.first_name }} {{ appt.doctor.last_name }}</td>
+                                    <td>{{ appt.doctor.specialization }}</td>
+                                    <td>{{ appt.appointment_date|date:"d M Y" }}</td>
+                                    <td>{{ appt.appointment_time|time:"H:i" }}</td>
+                                    <td>
+                                        <span class="badge {% if appt.status == 'Completed' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ appt.remarks|default:"—" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No past appointments.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ====== Prescriptions ====== -->
+{% if prescriptions %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-prescription me-2"></i>Recent Prescriptions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Date</th>
+                                <th>Diagnosis</th>
+                                <th>Medicines</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prescription in prescriptions %}
+                            <tr>
+                                <td>Dr. {{ prescription.appointment.doctor.first_name }} {{ prescription.appointment.doctor.last_name }}</td>
+                                <td>{{ prescription.created_at|date:"d M Y" }}</td>
+                                <td>{{ prescription.diagnosis|truncatechars:30 }}</td>
+                                <td>{{ prescription.medicines|truncatechars:30 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
 {% endblock %}

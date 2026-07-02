@@ -10,6 +10,7 @@ from appointments.models import Appointment
 from django.db.models import Count, Q
 from datetime import date
 from django.views.decorators.csrf import csrf_exempt
+from prescriptions.models import Prescription
 
 def get_dashboard_url(user):
     """Return the URL name for the user's dashboard based on their role."""
@@ -118,4 +119,53 @@ def receptionist_dashboard(request):
 
 @login_required
 def patient_dashboard(request):
-    return render(request, 'dashboards/patient_dashboard.html', {'role': 'Patient'})
+    # Get the patient profile for this user (if exists)
+    try:
+        patient = Patient.objects.get(user=request.user)
+    except Patient.DoesNotExist:
+        patient = None
+
+    if not patient:
+        context = {
+            'role': 'Patient',
+            'has_patient_profile': False,
+        }
+        return render(request, 'dashboards/patient_dashboard.html', context)
+
+    today = date.today()
+
+    # Upcoming appointments (Scheduled, from today onwards)
+    upcoming_appointments = Appointment.objects.filter(
+        patient=patient,
+        appointment_date__gte=today,
+        status='Scheduled'
+    ).select_related('doctor', 'patient').order_by('appointment_date', 'appointment_time')
+
+    # Past appointments (date < today)
+    past_appointments = Appointment.objects.filter(
+        patient=patient,
+        appointment_date__lt=today
+    ).select_related('doctor', 'patient').order_by('-appointment_date', '-appointment_time')
+
+    # Completed appointments (all completed, regardless of date)
+    completed_count = Appointment.objects.filter(
+        patient=patient,
+        status='Completed'
+    ).count()
+
+    # Prescriptions for this patient
+    prescriptions = Prescription.objects.filter(
+        appointment__patient=patient
+    ).select_related('appointment__doctor', 'appointment').order_by('-created_at')
+
+    context = {
+        'role': 'Patient',
+        'patient': patient,
+        'has_patient_profile': True,
+        'upcoming_appointments': upcoming_appointments[:5],   # limit to 5
+        'past_appointments': past_appointments[:10],         # limit to 10
+        'completed_count': completed_count,
+        'prescriptions': prescriptions[:5],
+        'today': today,
+    }
+    return render(request, 'dashboards/patient_dashboard.html', context)
