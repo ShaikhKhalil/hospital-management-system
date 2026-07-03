@@ -6,13 +6,16 @@ from django.db.models import Q
 from .models import Appointment
 from .forms import AppointmentForm
 
-def is_admin(user):
-    return hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+# ----- Helper: Check if user is Admin OR Receptionist -----
+def has_booking_permission(user):
+    """Return True if user is Admin or Receptionist."""
+    return hasattr(user, 'profile') and user.profile.role in ['ADMIN', 'RECEPTIONIST']
+
 
 # 1. List Appointments
 @login_required
 def appointment_list(request):
-    if not is_admin(request.user):
+    if not has_booking_permission(request.user):
         messages.error(request, 'You do not have permission to view this page.')
         return redirect('accounts:patient_dashboard')
 
@@ -45,10 +48,11 @@ def appointment_list(request):
     }
     return render(request, 'appointments/appointment_list.html', context)
 
+
 # 2. Add Appointment
 @login_required
 def appointment_add(request):
-    if not is_admin(request.user):
+    if not has_booking_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
@@ -65,10 +69,11 @@ def appointment_add(request):
 
     return render(request, 'appointments/appointment_form.html', {'form': form, 'title': 'Book Appointment'})
 
+
 # 3. Edit Appointment
 @login_required
 def appointment_edit(request, pk):
-    if not is_admin(request.user):
+    if not has_booking_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
@@ -86,10 +91,11 @@ def appointment_edit(request, pk):
 
     return render(request, 'appointments/appointment_form.html', {'form': form, 'title': 'Edit Appointment', 'appointment': appointment})
 
+
 # 4. Delete Appointment
 @login_required
 def appointment_delete(request, pk):
-    if not is_admin(request.user):
+    if not has_booking_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
@@ -102,10 +108,11 @@ def appointment_delete(request, pk):
 
     return render(request, 'appointments/appointment_confirm_delete.html', {'appointment': appointment})
 
+
 # 5. Update Status (Quick Action)
 @login_required
 def appointment_update_status(request, pk, status):
-    if not is_admin(request.user):
+    if not has_booking_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
