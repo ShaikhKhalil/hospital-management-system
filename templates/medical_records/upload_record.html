@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Upload Medical Record{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item"><a href="{% url 'patients:list' %}">Patients</a></li>
+    <li class="breadcrumb-item active">Upload Record</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-upload me-2"></i>Upload Medical Record</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.non_field_errors }}
+                    <div class="mb-3">
+                        <label for="{{ form.patient.id_for_label }}" class="form-label">Patient</label>
+                        {{ form.patient }}
+                        {% if form.patient.errors %}<div class="text-danger small">{{ form.patient.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.file.id_for_label }}" class="form-label">File (PDF, Image, etc.)</label>
+                        {{ form.file }}
+                        {% if form.file.errors %}<div class="text-danger small">{{ form.file.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description (Optional)</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check me-1"></i> Upload</button>
+                    <a href="{% url 'patients:list' %}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

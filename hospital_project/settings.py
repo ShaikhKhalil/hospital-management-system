@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'prescriptions',
     'core',
     'api',
+    'medical_records',
 ]
 
 MIDDLEWARE = [

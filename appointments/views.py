@@ -4,7 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Appointment
-from .forms import AppointmentForm
+from .forms import AppointmentForm,PatientAppointmentForm
+from patients.models import Patient          # ✅ This is needed
+from datetime import date                    # ✅ This is needed
 
 # ----- Helper: Check if user is Admin OR Receptionist -----
 def has_booking_permission(user):
@@ -157,3 +159,43 @@ def appointment_update_status(request, pk, status):
         return redirect('accounts:doctor_dashboard')
     else:
         return redirect('appointments:list')
+    
+from patients.models import Patient
+from datetime import date
+
+@login_required
+def patient_cancel_appointment(request, pk):
+    # Ensure the user has a patient profile
+    try:
+        patient = Patient.objects.get(user=request.user)
+    except Patient.DoesNotExist:
+        messages.error(request, 'You do not have a patient profile.')
+        return redirect('accounts:patient_dashboard')
+
+    # Get the appointment
+    appointment = get_object_or_404(Appointment, pk=pk)
+
+    # Check if this appointment belongs to the logged‑in patient
+    if appointment.patient != patient:
+        messages.error(request, 'You are not authorized to cancel this appointment.')
+        return redirect('accounts:patient_dashboard')
+
+    # Validation: only Scheduled appointments can be cancelled
+    if appointment.status != 'Scheduled':
+        messages.warning(request, f'This appointment is already {appointment.status.lower()}.')
+        return redirect('accounts:patient_dashboard')
+
+    # Validation: cannot cancel past appointments
+    if appointment.appointment_date < date.today():
+        messages.error(request, 'You cannot cancel a past appointment.')
+        return redirect('accounts:patient_dashboard')
+
+    # Validate via POST (to prevent accidental cancellation via GET)
+    if request.method == 'POST':
+        appointment.status = 'Cancelled'
+        appointment.save()
+        messages.success(request, f'Appointment #{appointment.appointment_id} cancelled successfully.')
+        return redirect('accounts:patient_dashboard')
+
+    # GET request – show a confirmation page
+    return render(request, 'appointments/patient_cancel_confirm.html', {'appointment': appointment})

@@ -7,7 +7,7 @@ from .models import Patient
 from .forms import PatientForm
 
 def is_admin(user):
-    return hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+    return hasattr(user, 'profile') and user.profile.role in ['ADMIN','RECEPTIONIST']
 
 # 1. List Patients
 @login_required

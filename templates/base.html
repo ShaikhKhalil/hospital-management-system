@@ -11,7 +11,104 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container mt-5">
+
+    <!-- ====== STICKY NAVIGATION BAR ====== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow">
+        <div class="container-fluid">
+            <!-- Back Button -->
+            <button onclick="window.history.back();" class="btn btn-light btn-sm me-2" title="Go Back">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+
+            <!-- Home Button -->
+            <a class="navbar-brand" href="
+                {% if request.user.is_authenticated %}
+                    {% if request.user.profile.role == 'ADMIN' %}
+                        {% url 'accounts:admin_dashboard' %}
+                    {% elif request.user.profile.role == 'DOCTOR' %}
+                        {% url 'accounts:doctor_dashboard' %}
+                    {% elif request.user.profile.role == 'RECEPTIONIST' %}
+                        {% url 'accounts:receptionist_dashboard' %}
+                    {% else %}
+                        {% url 'accounts:patient_dashboard' %}
+                    {% endif %}
+                {% else %}
+                    {% url 'accounts:login' %}
+                {% endif %}
+            ">
+                <i class="fas fa-home me-1"></i> HMS
+            </a>
+
+            <!-- Toggler for mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Right side: User info & Logout -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if request.user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="nav-link text-light">
+                                <i class="fas fa-user-circle me-1"></i> {{ request.user.username }}
+                                <span class="badge bg-light text-dark ms-1">{{ request.user.profile.role|title }}</span>
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'accounts:logout' %}">
+                                <i class="fas fa-sign-out-alt me-1"></i> Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'accounts:login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="{% url 'accounts:register' %}">
+                                <i class="fas fa-user-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ====== BREADCRUMBS (Optional) ====== -->
+    {% block breadcrumbs %}
+    <nav aria-label="breadcrumb" class="bg-light py-2 px-3 border-bottom">
+        <div class="container-fluid">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item">
+                    <a href="
+                        {% if request.user.is_authenticated %}
+                            {% if request.user.profile.role == 'ADMIN' %}
+                                {% url 'accounts:admin_dashboard' %}
+                            {% elif request.user.profile.role == 'DOCTOR' %}
+                                {% url 'accounts:doctor_dashboard' %}
+                            {% elif request.user.profile.role == 'RECEPTIONIST' %}
+                                {% url 'accounts:receptionist_dashboard' %}
+                            {% else %}
+                                {% url 'accounts:patient_dashboard' %}
+                            {% endif %}
+                        {% else %}
+                            {% url 'accounts:login' %}
+                        {% endif %}
+                    ">
+                        <i class="fas fa-home"></i>
+                    </a>
+                </li>
+                {% block breadcrumb_items %}{% endblock %}
+            </ol>
+        </div>
+    </nav>
+    {% endblock %}
+
+    <!-- ====== MAIN CONTENT ====== -->
+    <div class="container mt-3">
+        <!-- Messages -->
         {% if messages %}
             {% for message in messages %}
                 <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
@@ -20,6 +117,8 @@
                 </div>
             {% endfor %}
         {% endif %}
+
+        <!-- Page Content -->
         {% block content %}
         {% endblock %}
     </div>
