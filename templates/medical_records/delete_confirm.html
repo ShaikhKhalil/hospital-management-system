@@ -16,7 +16,8 @@
                 <form method="post">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Yes, Delete</button>
-                    <a href="{% url 'medical_records:patient_records' record.patient.id %}" class="btn btn-secondary">Cancel</a>
+                    <!-- FIX: Use patient_id=record.patient.patient_id -->
+                    <a href="{% url 'medical_records:patient_records' patient_id=record.patient.patient_id %}" class="btn btn-secondary">Cancel</a>
                 </form>
             </div>
         </div>

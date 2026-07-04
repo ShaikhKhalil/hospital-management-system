@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse, Http404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -6,6 +7,7 @@ from django.db.models import Q
 from .models import Prescription
 from .forms import PrescriptionForm
 from appointments.models import Appointment
+from .utils import render_to_pdf
 
 
 # ----- Helpers -----
@@ -135,3 +137,40 @@ def prescription_delete(request, pk):
         return redirect('prescriptions:list')
 
     return render(request, 'prescriptions/prescription_confirm_delete.html', {'prescription': prescription})
+
+@login_required
+def download_prescription_pdf(request, pk):
+    # Get the prescription
+    prescription = get_object_or_404(Prescription, pk=pk)
+    
+    # Check permissions: only the patient (owner) or admin/doctor can download
+    user = request.user
+    is_admin = hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+    is_doctor = hasattr(user, 'profile') and user.profile.role == 'DOCTOR'
+    is_patient = hasattr(user, 'profile') and user.profile.role == 'PATIENT'
+    
+    # Get the patient from the prescription
+    patient = prescription.appointment.patient
+    doctor = prescription.appointment.doctor
+    
+    # Allow admin, doctor, and the patient themselves
+    if not (is_admin or is_doctor or (is_patient and patient.user == user)):
+        messages.error(request, 'You are not authorized to download this prescription.')
+        return redirect('accounts:patient_dashboard')
+    
+    # Prepare context for PDF
+    context = {
+        'prescription': prescription,
+        'patient': patient,
+        'doctor': doctor,
+    }
+    
+    # Generate PDF
+    pdf = render_to_pdf('prescriptions/prescription_pdf.html', context)
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Prescription_{prescription.prescription_id}_{patient.first_name}_{patient.last_name}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    
+    return HttpResponse('Error generating PDF', status=500)

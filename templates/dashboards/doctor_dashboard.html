@@ -53,9 +53,10 @@
     <div class="col-md-3 col-sm-6 mb-3">
         <div class="card bg-warning text-dark">
             <div class="card-body">
-                <h6 class="card-title text-dark-50">Upcoming</h6>
-                <h2 class="display-6">{{ upcoming_appointments|length }}</h2>
-                <small>Future appointments</small>
+                <h6 class="card-title text-dark-50">Upload Medical Record</h6>
+                <a href="{% url 'medical_records:upload_record' %}" class="btn btn-light btn-sm w-100 mt-1">
+                    <i class="fas fa-upload me-1"></i> Upload
+                </a>
             </div>
         </div>
     </div>
@@ -97,10 +98,18 @@
                                     </td>
                                     <td>{{ appt.remarks|default:"—" }}</td>
                                     <td>
+                                        <!-- Complete Button (if Scheduled) -->
                                         {% if appt.status == 'Scheduled' %}
                                             <a href="{% url 'appointments:update_status' appt.pk 'Completed' %}" class="btn btn-sm btn-success">Complete</a>
                                         {% endif %}
+                                        
+                                        <!-- Prescribe Button -->
                                         <a href="{% url 'prescriptions:add' %}?appointment={{ appt.pk }}" class="btn btn-sm btn-primary">Prescribe</a>
+                                        
+                                        <!-- Upload MR Button (NEW) -->
+                                        <a href="{% url 'medical_records:upload_record' %}?patient={{ appt.patient.pk }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-medical"></i> Upload MR
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -132,6 +141,7 @@
                                     <th>Time</th>
                                     <th>Patient</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -145,6 +155,11 @@
                                         </a>
                                     </td>
                                     <td><span class="badge bg-primary">{{ appt.status }}</span></td>
+                                    <td>
+                                        <a href="{% url 'medical_records:upload_record' %}?patient={{ appt.patient.pk }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-medical"></i> Upload MR
+                                        </a>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -176,6 +191,7 @@
                                     <th>Time</th>
                                     <th>Patient</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -192,6 +208,11 @@
                                         <span class="badge {% if appt.status == 'Completed' %}bg-success{% else %}bg-danger{% endif %}">
                                             {{ appt.status }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'medical_records:upload_record' %}?patient={{ appt.patient.pk }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-medical"></i> Upload MR
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}

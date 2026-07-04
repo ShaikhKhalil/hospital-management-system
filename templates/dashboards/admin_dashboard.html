@@ -17,7 +17,7 @@
 <!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="btn-group" role="group">
+        <div class="btn-group flex-wrap" role="group">
             <a href="{% url 'departments:add' %}" class="btn btn-outline-primary">
                 <i class="fas fa-building me-1"></i> Add Department
             </a>
@@ -32,6 +32,10 @@
             </a>
             <a href="{% url 'prescriptions:add' %}" class="btn btn-outline-primary">
                 <i class="fas fa-prescription me-1"></i> Add Prescription
+            </a>
+            <!-- NEW: Upload Medical Record -->
+            <a href="{% url 'medical_records:upload_record' %}" class="btn btn-outline-success">
+                <i class="fas fa-file-medical me-1"></i> Upload Medical Record
             </a>
         </div>
     </div>

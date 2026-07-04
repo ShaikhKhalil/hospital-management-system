@@ -42,6 +42,15 @@ def upload_record(request):
         messages.error(request, 'You do not have permission to upload records.')
         return redirect('accounts:patient_dashboard')
 
+    # Pre-select patient if parameter is provided
+    initial_patient = None
+    patient_id = request.GET.get('patient')
+    if patient_id:
+        try:
+            initial_patient = Patient.objects.get(patient_id=patient_id)
+        except Patient.DoesNotExist:
+            pass
+
     if request.method == 'POST':
         form = MedicalRecordForm(request.POST, request.FILES)
         if form.is_valid():
@@ -49,15 +58,17 @@ def upload_record(request):
             record.uploaded_by = request.user
             record.save()
             messages.success(request, f'Record "{record.title}" uploaded successfully.')
-            return redirect('medical_records:patient_records', patient_id=record.patient.id)
+            # FIX: Use patient_id or pk instead of id
+            return redirect('medical_records:patient_records', patient_id=record.patient.patient_id)
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = MedicalRecordForm()
+        # Pass initial patient if pre-selected
+        initial = {'patient': initial_patient} if initial_patient else {}
+        form = MedicalRecordForm(initial=initial)
 
     return render(request, 'medical_records/upload_record.html', {'form': form})
 
-# Delete record (admin/doctor/receptionist)
 @login_required
 def delete_record(request, pk):
     if not has_upload_permission(request.user):
@@ -65,7 +76,8 @@ def delete_record(request, pk):
         return redirect('accounts:patient_dashboard')
 
     record = get_object_or_404(MedicalRecord, pk=pk)
-    patient_id = record.patient.id
+    patient_id = record.patient.patient_id  # FIX: Use patient_id instead of id
+
     if request.method == 'POST':
         record.delete()
         messages.success(request, 'Record deleted successfully.')

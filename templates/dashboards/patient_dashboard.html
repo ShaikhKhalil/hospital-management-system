@@ -199,6 +199,7 @@
                                 <th>Date</th>
                                 <th>Diagnosis</th>
                                 <th>Medicines</th>
+                                <th>Download</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -208,6 +209,11 @@
                                 <td>{{ prescription.created_at|date:"d M Y" }}</td>
                                 <td>{{ prescription.diagnosis|truncatechars:30 }}</td>
                                 <td>{{ prescription.medicines|truncatechars:30 }}</td>
+                                <td>
+                                    <a href="{% url 'prescriptions:download_pdf' prescription.pk %}" class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -261,7 +267,6 @@
         </div>
     </div>
 </div>
-
 
 {% endif %}
 {% endblock %}
