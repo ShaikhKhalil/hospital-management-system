@@ -5,14 +5,25 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Prescription
 from .forms import PrescriptionForm
+from appointments.models import Appointment
 
+
+# ----- Helpers -----
 def is_admin(user):
     return hasattr(user, 'profile') and user.profile.role == 'ADMIN'
+
+def is_doctor(user):
+    return hasattr(user, 'profile') and user.profile.role == 'DOCTOR'
+
+def has_prescription_permission(user):
+    """Allow ADMIN, DOCTOR, and RECEPTIONIST to manage prescriptions."""
+    return hasattr(user, 'profile') and user.profile.role in ['ADMIN', 'DOCTOR', 'RECEPTIONIST']
+
 
 # 1. List Prescriptions
 @login_required
 def prescription_list(request):
-    if not is_admin(request.user):
+    if not has_prescription_permission(request.user):
         messages.error(request, 'You do not have permission to view this page.')
         return redirect('accounts:patient_dashboard')
 
@@ -35,12 +46,28 @@ def prescription_list(request):
     context = {'page_obj': page_obj, 'query': query}
     return render(request, 'prescriptions/prescription_list.html', context)
 
+
 # 2. Add Prescription
 @login_required
 def prescription_add(request):
-    if not is_admin(request.user):
+    if not has_prescription_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
+
+    # Pre-fill appointment if provided in GET parameter
+    initial_appointment = None
+    appointment_id = request.GET.get('appointment')
+    if appointment_id:
+        try:
+            initial_appointment = Appointment.objects.get(pk=appointment_id)
+            # If user is a doctor, only allow prescribing for their own appointments
+            if is_doctor(request.user):
+                doctor = request.user.doctor_profile  # Get the doctor profile
+                if initial_appointment.doctor != doctor:
+                    messages.error(request, 'You can only prescribe for your own appointments.')
+                    return redirect('accounts:doctor_dashboard')
+        except Appointment.DoesNotExist:
+            pass
 
     if request.method == 'POST':
         form = PrescriptionForm(request.POST)
@@ -51,18 +78,28 @@ def prescription_add(request):
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
-        form = PrescriptionForm()
+        # If we have an initial appointment, pre-fill the form
+        form = PrescriptionForm(initial={'appointment': initial_appointment})
 
     return render(request, 'prescriptions/prescription_form.html', {'form': form, 'title': 'Add Prescription'})
+
 
 # 3. Edit Prescription
 @login_required
 def prescription_edit(request, pk):
-    if not is_admin(request.user):
+    if not has_prescription_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
     prescription = get_object_or_404(Prescription, pk=pk)
+    
+    # If user is a doctor, only allow editing their own prescriptions
+    if is_doctor(request.user):
+        doctor = request.user.doctor_profile
+        if prescription.appointment.doctor != doctor:
+            messages.error(request, 'You can only edit your own prescriptions.')
+            return redirect('accounts:doctor_dashboard')
+
     if request.method == 'POST':
         form = PrescriptionForm(request.POST, instance=prescription)
         if form.is_valid():
@@ -76,14 +113,21 @@ def prescription_edit(request, pk):
 
     return render(request, 'prescriptions/prescription_form.html', {'form': form, 'title': 'Edit Prescription', 'prescription': prescription})
 
+
 # 4. Delete Prescription
 @login_required
 def prescription_delete(request, pk):
-    if not is_admin(request.user):
+    if not has_prescription_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
     prescription = get_object_or_404(Prescription, pk=pk)
+    
+    # Only ADMIN can delete prescriptions
+    if not is_admin(request.user):
+        messages.error(request, 'Only administrators can delete prescriptions.')
+        return redirect('prescriptions:list')
+
     if request.method == 'POST':
         prescription_id = prescription.prescription_id
         prescription.delete()

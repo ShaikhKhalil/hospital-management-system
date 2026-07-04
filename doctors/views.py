@@ -7,6 +7,9 @@ from .models import Doctor
 from .forms import DoctorForm
 from departments.models import Department
 from django.contrib.auth.models import User
+from patients.models import Patient
+from appointments.models import Appointment
+from prescriptions.models import Prescription
 
 def is_admin(user):
     return hasattr(user, 'profile') and user.profile.role == 'ADMIN'
@@ -99,3 +102,34 @@ def doctor_delete(request, pk):
         return redirect('doctors:list')
 
     return render(request, 'doctors/doctor_confirm_delete.html', {'doctor': doctor})
+
+@login_required
+def patient_history(request, patient_id):
+    # Ensure the logged-in user is a doctor
+    try:
+        doctor = Doctor.objects.get(user=request.user)
+    except Doctor.DoesNotExist:
+        messages.error(request, 'You are not authorized to view this page.')
+        return redirect('accounts:patient_dashboard')
+
+    # Get the patient
+    patient = get_object_or_404(Patient, pk=patient_id)
+
+    # Get all appointments for this patient with this doctor
+    appointments = Appointment.objects.filter(
+        patient=patient,
+        doctor=doctor
+    ).select_related('patient', 'doctor').order_by('-appointment_date', '-appointment_time')
+
+    # Get prescriptions for this patient
+    prescriptions = Prescription.objects.filter(
+        appointment__patient=patient,
+        appointment__doctor=doctor
+    ).select_related('appointment').order_by('-created_at')
+
+    context = {
+        'patient': patient,
+        'appointments': appointments,
+        'prescriptions': prescriptions,
+    }
+    return render(request, 'doctors/patient_history.html', context)

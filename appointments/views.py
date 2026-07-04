@@ -11,6 +11,10 @@ def has_booking_permission(user):
     """Return True if user is Admin or Receptionist."""
     return hasattr(user, 'profile') and user.profile.role in ['ADMIN', 'RECEPTIONIST']
 
+def has_status_permission(user):
+    """Return True if user is Admin, Receptionist, or Doctor."""
+    return hasattr(user, 'profile') and user.profile.role in ['ADMIN', 'RECEPTIONIST', 'DOCTOR']
+
 
 # 1. List Appointments
 @login_required
@@ -109,19 +113,47 @@ def appointment_delete(request, pk):
     return render(request, 'appointments/appointment_confirm_delete.html', {'appointment': appointment})
 
 
-# 5. Update Status (Quick Action)
+# 5. Update Status (Quick Action) - Updated for Doctors
 @login_required
 def appointment_update_status(request, pk, status):
-    if not has_booking_permission(request.user):
+    if not has_status_permission(request.user):
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('accounts:patient_dashboard')
 
     appointment = get_object_or_404(Appointment, pk=pk)
-    if status in dict(Appointment.STATUS_CHOICES):
-        appointment.status = status
-        appointment.save()
-        messages.success(request, f'Appointment #{appointment.appointment_id} status updated to "{status}".')
-    else:
-        messages.error(request, 'Invalid status.')
+    
+    # If user is a DOCTOR, only allow updating their OWN appointments
+    if hasattr(request.user, 'profile') and request.user.profile.role == 'DOCTOR':
+        try:
+            doctor = request.user.doctor_profile
+            if appointment.doctor != doctor:
+                messages.error(request, 'You can only update status for your own appointments.')
+                return redirect('accounts:doctor_dashboard')
+        except:
+            messages.error(request, 'Doctor profile not found.')
+            return redirect('accounts:doctor_dashboard')
 
-    return redirect('appointments:list')
+    # Check if status is valid
+    if status not in dict(Appointment.STATUS_CHOICES):
+        messages.error(request, 'Invalid status.')
+        return redirect('appointments:list')
+
+    # Prevent changing status if already completed or cancelled
+    if appointment.status == 'Completed':
+        messages.warning(request, f'Appointment #{appointment.appointment_id} is already completed.')
+        return redirect('appointments:list')
+    
+    if appointment.status == 'Cancelled':
+        messages.warning(request, f'Appointment #{appointment.appointment_id} is cancelled.')
+        return redirect('appointments:list')
+
+    # Update status
+    appointment.status = status
+    appointment.save()
+    messages.success(request, f'Appointment #{appointment.appointment_id} status updated to "{status}".')
+    
+    # Redirect based on role
+    if hasattr(request.user, 'profile') and request.user.profile.role == 'DOCTOR':
+        return redirect('accounts:doctor_dashboard')
+    else:
+        return redirect('appointments:list')
